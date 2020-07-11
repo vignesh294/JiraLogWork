@@ -1,0 +1,8 @@
+{
+  "set_verify": true,
+  "cert_path": "some/path/readytousecertificate.cert",
+  "server": "https://jira.example.com",
+  "username": "jdoe",
+  "password": "somepass",
+  "default_work_start_time": "13:00:00"
+}
