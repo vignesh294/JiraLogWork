@@ -1,6 +1,7 @@
 import sys
 from jira import JIRA
 from datetime import datetime
+import concurrent.futures
 import json
 
 config = None
@@ -71,15 +72,21 @@ def prepareWorklogRequests(no_of_worklogs):
         worklog_requests.append(prepareWorklogRequest(worklog_request_string))
     return worklog_requests
 
+def addWorklog(jira, worklog_request):
+    issueId = getattr(worklog_request, 'issueId')
+    work = getattr(worklog_request, 'work')
+    comment = getattr(worklog_request, 'comment')
+    date = getattr(worklog_request, 'date')
+    print("=====Processing: " + str(worklog_request) + "=====")
+    worklog_response = jira.add_worklog(issue = issueId, timeSpent = work, comment=comment, started = date)
+    print("=====Processed: " + str(worklog_request) + "=====")
+
 def addWorklogs(jira, worklog_requests):
-    for worklog_request in worklog_requests:
-        issueId = getattr(worklog_request, 'issueId')
-        work = getattr(worklog_request, 'work')
-        comment = getattr(worklog_request, 'comment')
-        date = getattr(worklog_request, 'date')
-        print("=====Processing: " + str(worklog_request) + "=====")
-        worklog_response = jira.add_worklog(issue = issueId, timeSpent = work, comment=comment, started = date)
-        print("=====Processed: " + str(worklog_request) + "=====")
+    # use the network call time to jira to concurrently process other worklogs
+    # using one thread per worklog request
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(worklog_requests)) as executor:
+        for worklog_request in worklog_requests:
+            executor.submit(addWorklog, jira, worklog_request)
 
 def main():
     prepareConfig()
